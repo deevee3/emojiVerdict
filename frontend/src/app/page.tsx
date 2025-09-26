@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { PDFDocument } from "pdf-lib";
 import styles from "./page.module.css";
@@ -630,14 +631,18 @@ export default function Home() {
     <div className={styles.page}>
       <main className={styles.main}>
         <header className={styles.hero}>
-          <span className={styles.badge} aria-hidden>
-            ⚖️ Emoji Verdict Court
-          </span>
-          <h1 className={styles.title}>Submit your evidence, earn your emoji verdict.</h1>
-          <p className={styles.subtitle}>
-            Paste up to 500 characters, tune the Weirdness slider, and we will render a shareable
-            verdict using emoji-only reasoning.
-          </p>
+          <div className={styles.brandRow}>
+            <Image
+              src="/glenride-transparent-square256px.png"
+              alt="Glenride logo"
+              width={48}
+              height={48}
+              className={styles.logo}
+              priority
+            />
+            <span className={styles.badge}>⚖️ Emoji Verdict Court</span>
+          </div>
+          <h1 className={styles.title}>Complete the case file and get a verdict today.</h1>
         </header>
 
         <form className={styles.form} onSubmit={handleSubmit} noValidate>
