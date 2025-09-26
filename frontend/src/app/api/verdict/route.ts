@@ -303,6 +303,51 @@ const translateText = async ({
   }
 };
 
+const fetchChatCompletion = async (
+  requestBody: Record<string, unknown>,
+  attemptedTemperatureFallback = false
+): Promise<unknown> => {
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${OPENAI_API_KEY}`
+    },
+    body: JSON.stringify(requestBody)
+  });
+
+  if (response.ok) {
+    return (await response.json()) as unknown;
+  }
+
+  const errorText = await response.text();
+  let parsedError: { error?: { message?: string; code?: string } } | null = null;
+
+  try {
+    parsedError = JSON.parse(errorText) as { error?: { message?: string; code?: string } };
+  } catch {
+    parsedError = null;
+  }
+
+  const errorMessage = parsedError?.error?.message;
+  const errorCode = parsedError?.error?.code;
+  const hasTemperature = Object.prototype.hasOwnProperty.call(requestBody, "temperature");
+
+  if (
+    !attemptedTemperatureFallback &&
+    hasTemperature &&
+    typeof errorMessage === "string" &&
+    errorMessage.toLowerCase().includes("temperature") &&
+    errorCode === "unsupported_value"
+  ) {
+    const { temperature: _ignored, ...withoutTemperature } = requestBody;
+    console.warn("Retrying OpenAI request without temperature due to model limitations.");
+    return fetchChatCompletion(withoutTemperature, true);
+  }
+
+  throw new Error(`OpenAI request failed: ${errorText}`);
+};
+
 const fetchVerdict = async (payload: VerdictPromptPayload) => {
   if (!OPENAI_API_KEY) {
     throw new Error("OpenAI credentials are not configured.");
@@ -318,21 +363,7 @@ const fetchVerdict = async (payload: VerdictPromptPayload) => {
     requestBody.temperature = clampToRange(payload.density / 10, 0.2, 0.9);
   }
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${OPENAI_API_KEY}`
-    },
-    body: JSON.stringify(requestBody)
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`OpenAI request failed: ${errorText}`);
-  }
-
-  const data = (await response.json()) as {
+  const data = (await fetchChatCompletion(requestBody)) as {
     choices?: { message?: { content?: string } }[];
   };
 
