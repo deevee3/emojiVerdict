@@ -340,7 +340,8 @@ const fetchChatCompletion = async (
     errorMessage.toLowerCase().includes("temperature") &&
     errorCode === "unsupported_value"
   ) {
-    const { temperature: _ignored, ...withoutTemperature } = requestBody;
+    const withoutTemperature = { ...requestBody };
+    delete withoutTemperature.temperature;
     console.warn("Retrying OpenAI request without temperature due to model limitations.");
     return fetchChatCompletion(withoutTemperature, true);
   }

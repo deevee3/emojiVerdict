@@ -611,7 +611,8 @@ export default function Home() {
       });
 
       const pdfBytes = await pdfDoc.save();
-      const pdfBlob = new Blob([pdfBytes], { type: "application/pdf" });
+      const pdfArray = Array.from(pdfBytes);
+      const pdfBlob = new Blob([Uint8Array.from(pdfArray)], { type: "application/pdf" });
       const blobUrl = URL.createObjectURL(pdfBlob);
       const anchor = document.createElement("a");
       anchor.href = blobUrl;
