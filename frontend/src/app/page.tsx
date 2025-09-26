@@ -632,15 +632,17 @@ export default function Home() {
       <main className={styles.main}>
         <header className={styles.hero}>
           <div className={styles.brandRow}>
-            <Image
-              src="/glenride-transparent-square256px.png"
-              alt="Glenride logo"
-              width={48}
-              height={48}
-              className={styles.logo}
-              priority
-            />
-            <span className={styles.badge}>⚖️ Emoji Verdict Court</span>
+            <div className={styles.logoTile}>
+              <Image
+                src="/glenride-transparent-square256px.png"
+                alt="Glenride logo"
+                width={32}
+                height={32}
+                className={styles.logoImage}
+                priority
+              />
+            </div>
+            <span className={styles.badge}>Emoji Verdict Court</span>
           </div>
           <h1 className={styles.title}>Complete the case file and get a verdict today.</h1>
         </header>
