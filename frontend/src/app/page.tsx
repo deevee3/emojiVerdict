@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { PDFDocument } from "pdf-lib";
 import styles from "./page.module.css";
 
 const MAX_CHAR_COUNT = 500;
@@ -579,17 +580,47 @@ export default function Home() {
         throw new Error("Failed to generate OG card. Try again.");
       }
 
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
+      const imageBytes = await response.arrayBuffer();
+      const pdfDoc = await PDFDocument.create();
+
+      const contentType = response.headers.get("Content-Type") ?? "";
+      let embeddedImage;
+
+      if (contentType.includes("image/png")) {
+        embeddedImage = await pdfDoc.embedPng(imageBytes);
+      } else if (contentType.includes("image/jpg") || contentType.includes("image/jpeg")) {
+        embeddedImage = await pdfDoc.embedJpg(imageBytes);
+      } else {
+        try {
+          embeddedImage = await pdfDoc.embedPng(imageBytes);
+        } catch (pngError) {
+          embeddedImage = await pdfDoc.embedJpg(imageBytes).catch(() => {
+            throw pngError;
+          });
+        }
+      }
+
+      const { width, height } = embeddedImage;
+      const page = pdfDoc.addPage([width, height]);
+      page.drawImage(embeddedImage, {
+        x: 0,
+        y: 0,
+        width,
+        height
+      });
+
+      const pdfBytes = await pdfDoc.save();
+      const pdfBlob = new Blob([pdfBytes], { type: "application/pdf" });
+      const blobUrl = URL.createObjectURL(pdfBlob);
       const anchor = document.createElement("a");
       anchor.href = blobUrl;
-      anchor.download = "emoji-verdict.png";
+      anchor.download = "emoji-verdict.pdf";
       document.body.appendChild(anchor);
       anchor.click();
       document.body.removeChild(anchor);
       URL.revokeObjectURL(blobUrl);
     } catch (caught) {
-      setOgError((caught as Error).message ?? "Unable to download OG card.");
+      setOgError((caught as Error).message ?? "Unable to download PDF.");
     } finally {
       setIsGeneratingOg(false);
     }
@@ -757,7 +788,7 @@ export default function Home() {
           <footer className={styles.shareSection}>
             <h3 className={styles.shareTitle}>Share your verdict</h3>
             <p className={styles.shareHint}>
-              Copy the link or download the OG card to show friends exactly what the jury decided.
+              Copy the link or download a PDF keepsake to show friends exactly what the jury decided.
             </p>
 
             <div className={styles.shareControls} role="group" aria-label="Share controls">
@@ -778,7 +809,7 @@ export default function Home() {
                 disabled={!ogImageUrl || isGeneratingOg}
                 aria-live="polite"
               >
-                {isGeneratingOg ? "Preparing card…" : "Download OG card"}
+                {isGeneratingOg ? "Preparing PDF…" : "Download verdict PDF"}
               </button>
             </div>
 
