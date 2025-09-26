@@ -51,10 +51,17 @@ The generated task list _must_ follow this structure:
 - [ ] 3.0 Parent Task Title (may not require sub-tasks if purely structural or configuration)
 ```
 
-## Interaction Model
 
 The process explicitly requires a pause after generating parent tasks to get user confirmation ("Go") before proceeding to generate the detailed sub-tasks. This ensures the high-level plan aligns with user expectations before diving into details.
 
 ## Target Audience
 
 Assume the primary reader of the task list is a **junior developer** who will implement the feature with awareness of the existing codebase context.
+
+## Remediation Checklist: `frontend/src/app/api/verdict/route.ts`
+
+- **Capture the failure** – Note the exact status message: attempting to replace the file with malformed patch syntax caused repeated errors and triggered the “too many errors in a row” guard.
+- **Restore a clean baseline** – Before introducing new descriptive text fields, revert `frontend/src/app/api/verdict/route.ts` (via `git checkout -- frontend/src/app/api/verdict/route.ts`) to ensure subsequent patches apply cleanly.
+- **Stage schema updates carefully** – When adding the new `verdict_text`, `sentence_text`, and `evidence_text` fields, modify the prompt, validator, and share payloads in a single, well‑formed patch to avoid partial state.
+- **Re-run linting early** – After each structural change, execute `npm run lint` in `frontend/` to surface syntax or typing issues before proceeding to the next edit.
+- **Fail fast on patch errors** – If `apply_patch` rejects a hunk, stop and re-read the target file contents before retrying to prevent cascading errors.
